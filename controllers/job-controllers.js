@@ -14,6 +14,11 @@ let DUMMY_JOBS = [
 
 const HttpError = require("../models/http-error");
 const uuid = require("uuid");
+const { validationResult } = require("express-validator");
+
+/*
+!!1 -- if you wanna use third party API, you can import own async function from util dir
+*/
 
 const getJobByJobId = (req, res, next) => {
   const jobId = req.params.jid;
@@ -30,33 +35,42 @@ const getJobByJobId = (req, res, next) => {
   res.json({ job });
 };
 
-const getJobByUserId = (req, res, next) => {
+const getJobsByUserId = (req, res, next) => {
   const userId = req.params.uid;
 
-  const job = DUMMY_JOBS.find((job) => {
+  const jobs = DUMMY_JOBS.filter((job) => {
     return job.creator === userId;
   });
 
-  if (!job) {
+  if (!jobs || jobs.length === 0) {
     // !!when you use next() you have to return
     return next(
-      new HttpError("Could not find a job for the provided user id.", 404)
+      new HttpError("Could not find jobs for the provided user id.", 404)
     );
   }
 
-  res.json({ job });
+  res.json({ jobs });
 };
 
+/*
+!!2 -- And then you can change create midleware using async. Note; if you use async function for your middleware, you CANNOT use nomal error, so you should RETURN next() to wrap youe error code.
+*/
+
+/*
+!!3 -- then you can add your own async function to fetch other API inside. 
+to do error handling, you can use try/catch. if you would catch error, you need to RETURN next() wrapped the error
+*/
+
 const createJob = (req, res, next) => {
-  const {
-    title,
-    location,
-    company,
-    originalPostUrl,
-    skills,
-    isApply,
-    creator,
-  } = req.body;
+  // this can check requirement you set and return error
+  const errors = validationResult(req);
+
+  if (!errors.isEmpty()) {
+    throw new HttpError("Invalid inputs passes, please check your data.", 422);
+  }
+
+  const { title, location, company, originalPostUrl, skills, status, creator } =
+    req.body;
 
   const createdJob = {
     id: uuid.v4(),
@@ -65,7 +79,7 @@ const createJob = (req, res, next) => {
     company,
     originalPostUrl,
     skills,
-    isApply,
+    status,
     creator,
   };
 
@@ -75,7 +89,14 @@ const createJob = (req, res, next) => {
 };
 
 const updateJob = (req, res, next) => {
-  const { title, location, company, originalPostUrl, skills, isApply } =
+  // this can check requirement you set and return error
+  const errors = validationResult(req);
+
+  if (!errors.isEmpty()) {
+    throw new HttpError("Invalid inputs passes, please check your data.", 422);
+  }
+
+  const { title, location, company, originalPostUrl, skills, status } =
     req.body;
   const jobId = req.params.jid;
 
@@ -89,7 +110,7 @@ const updateJob = (req, res, next) => {
   updatedJob.company = company;
   updatedJob.originalPostUrl = originalPostUrl;
   updatedJob.skills = skills;
-  updatedJob.isApply = isApply;
+  updatedJob.status = status;
 
   DUMMY_JOBS[jobIndex] = updatedJob;
 
@@ -100,6 +121,10 @@ const deleteJob = (req, res, next) => {
   const jobId = req.params.jid;
   const deletedJob = DUMMY_JOBS.find((job) => job.id === jobId);
 
+  if (!deletedJob) {
+    throw new HttpError("Could not find a placr for that id.", 404);
+  }
+
   //!! Do not touch original data
   DUMMY_JOBS = DUMMY_JOBS.filter((job) => job.id !== jobId);
 
@@ -107,7 +132,7 @@ const deleteJob = (req, res, next) => {
 };
 
 exports.getJobByJobId = getJobByJobId;
-exports.getJobByUserId = getJobByUserId;
+exports.getJobsByUserId = getJobsByUserId;
 exports.createJob = createJob;
 exports.updateJob = updateJob;
 exports.deleteJob = deleteJob;

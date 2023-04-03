@@ -4,7 +4,9 @@ const bodyParser = require("body-parser");
 
 // 4. import router
 const jobsRoutes = require("./routes/job-routes");
+const usersRoutes = require("./routes/user-routes");
 const HttpError = require("./models/http-error");
+
 const app = express();
 
 // encode request body to json data
@@ -12,6 +14,7 @@ app.use(bodyParser.json());
 
 // 2. midleware setup
 app.use("/api/jobs", jobsRoutes);
+app.use("/api/users", usersRoutes);
 
 // error handling
 // - for unspported routes

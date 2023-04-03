@@ -80,3 +80,8 @@ Since this is backend app, we don't have view.
 
 1. Models
 2. Controler : correction of logic
+
+## Validation
+
+- `npm i --save express-validator` : express validotor
+  - `check` method : return new middleware with our validation requirement
